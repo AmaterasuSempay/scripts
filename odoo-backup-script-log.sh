@@ -36,3 +36,4 @@ if [ "$HASH_FIRST" = "$HASH_SECOND" ]; then
 echo "$(date +%F.%T) backup was successfully saved" >> ${LOG_DIR}/${LOG_FILE}
 else
 echo "$(date +%F.%T) backup was not successfully saved" >> ${LOG_DIR}/${LOG_FILE}
+fi
