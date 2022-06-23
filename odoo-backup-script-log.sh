@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # vars for config file
-. /pach/to/config_file.conf
+. /path/to/config_file.conf
 
 # activate service account
 gcloud auth activate-service-account ${SERVICE_ACCOUNT} --key-file=${ACCOUNT_KEY}
