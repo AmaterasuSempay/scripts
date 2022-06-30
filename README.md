@@ -1,10 +1,59 @@
 # odoo-backup-script
 
-My backup script using google secret manager, copying the backup to a safe storage and logging the backup execution.
+My backup and encryption scrip using google secret manager, copying the backup to secure storage and logging the backup execution.
 
 # Script configuration
 
 I used a separate configuration file for script variables to make it simple to customize.
+
+1.Database configuration.  Used to create backup in script comand.
+
+```
+DATABASE_IP=your_database_ip                                               # -database ip or web page address
+PORT=8069                                                                  # -database port
+ODOO_DATABASE=db1                                                          # -database name
+```
+2.Backup and save dir. Used to create, copy, delete backup in script comand.
+
+```
+BACKUP_DIR=/path/to/odoo-backup/                                           # -backup directory
+SAVE_BASE=/path/to/sevebase/                                               # -safe directory in which backups are copied
+```
+3.Log directory and log file.
+
+```
+LOG_DIR=/path/to/                                                          # -log directory
+LOG_FILE=name.log                                                          # -log file
+```
+4.Service account and key. To activate a service account.
+
+```
+SERVICE_ACCOUNT=your_service_account@your_projectid.iam.gserviceaccount.com # -service account mail
+ACCOUNT_KEY=/path/to/key.json                                               # -service account key
+PROJECT_ID=your-project-id                                                  # -gcp project id (For a more accurate identification of the secrete)
+```
+5.Secret from secret manager. To get the database password from the secret manager.
+
+```
+SECRET_VERSION=latest                                                       # -secret version (If there are many versions, use the right one)
+SECRET_ID=your_secretid                                                     # -use secret name
+```
+6.GPG secret from secret manager. To obtain a key for encrypting backups.
+
+```
+GPG_SECRET_VERSION=latest                                                   # -secret version (If there are many versions, use the right one)
+GPG_SECRET_ID=gpg-secret                                                    # -use secret name
+GPG_SECRET_KEY=/home/neko/odoo-script-and-td/public.key                     # -file for create gpg key
+```
+7.Time lap for function delete, copy, hashsum.
+
+```
+TIME_LAP_DEL_BD=1                                                           # -file deletion time in the backup directory
+TIME_LAP_DEL_SB=1                                                           # -file deletion time in the safe directory
+TIME_LAP_COPY=1                                                             # -file copy time to the sefe directory
+TIME_LAP_HASH_BD=1                                                          # -to check the hash sum of the last backup in the backup directory
+TIME_LAP_HASH_SB=1                                                          # -to check the hash sum of the last backup in the safe directory
+```
 
 # Gogle Cloud Secret Manager
 
@@ -53,6 +102,28 @@ done
 ```
 The first one authorizes the script using the variables аccount service ID and its key, the second outputs the value of the secret.
 
+I also use the secret manager to obtain the encryption key.More details about encryption are described below.
+
+# Encryption with gpg
+I use asymmetric encryption with a public key file to encrypt backups with gpg.
+it looks like this:
+```Bash
+gpg -e -f public-key-file encryption-file
+```
+But the public key file is in the secret manager, if you try to read it with `gcloud secrets versions access` we get the value, so I read the value of the secret with `gcloud secrets versions access` and put it in the file.
+```Bash
+echo "$(gcloud secrets versions access ${GPG_SECRET_VERSION} --project ${PROJECT_ID} --secret=${GPG_SECRET_ID})" > ${GPG_SECRET_KEY}
+```
+Also at the end of the script there is a command to delete this file.
+```Bash
+rm ${GPG_SECRET_KEY}
+```
+Now that we have the public key file and can encrypt the files, we write the command to encrypt the just-created backup and delete its non-encrypted version:
+```Bash
+find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_COPY} -name "${ODOO_DATABASE}.*.zip" -exec gpg -e -f ${GPG_SECRET_KEY} '{}' \;
+
+find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_COPY} -name "${ODOO_DATABASE}.*.zip" -delete
+```
 # curl
 
 This part of the script pulls a backup of the database.
