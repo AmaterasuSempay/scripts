@@ -124,22 +124,52 @@ find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_COPY} -name "${ODOO_DATABASE}.*.zip"
 
 find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_COPY} -name "${ODOO_DATABASE}.*.zip" -delete
 ```
-# curl
+# Сreate a backup
 
 This part of the script pulls a backup of the database.
-
+To do this, I use the curl:
+```Bash
+curl -X POST \
+     -F "master_pwd=$SECRET" \
+     -F "name=${ODOO_DATABASE}" \
+     -F "backup_format=zip" \
+     -o ${BACKUP_DIR}/${ODOO_DATABASE}.$(date +%F.%T).zip \
+     http://${DATABASE_IP}:${PORT}/web/database/backup
+```
 # Deleting old backups
 
 Using the `find` command with special keys, the script deletes old backups.
+```Bash
+find ${BACKUP_DIR} -type f -mtime ${TIME_LAP_DEL_BD} -name "${ODOO_DATABASE}.*.*.gpg" -delete
+
+find ${SAVE_BASE} -type f -mtime ${TIME_LAP_DEL_SB} -name "${ODOO_DATABASE}.*.*.gpg" -delete
+```
 
 # Copying a backup to a safe storage
 
 This part of the script copies the last backup to a safe storage.
+Also using a `find`:
+```Bash
+find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_COPY} -name "${ODOO_DATABASE}.*.*.gpg" -exec cp '{}' ${SAVE_BASE} \;
+```
 
 # Checking and comparing the hash
 
 This part of the script checks the last backup in the backup directory and the safe directory by calculating and comparing the hash of the two files.
+Also using a `find` in the variable:
+```Bash
+HASH_FIRST= find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_HASH_BD} -name "${ODOO_DATABASE}.*.*.gpg" -exec md5sum '{}' \;
 
+HASH_SECOND= find ${SAVE_BASE} -type f -cmin ${TIME_LAP_HASH_SB} -name "${ODOO_DATABASE}.*.*.gpg" -exec md5sum '{}' \;
+```
 # Logging the copying process
 
 The last part of the script is to keep a log file in order to describe the result of copying to the safe storage.
+Use the `if` operator:
+```Bash
+if [ "$HASH_FIRST" = "$HASH_SECOND" ]; then
+echo "$(date +%F.%T) backup was successfully saved" >> ${LOG_DIR}/${LOG_FILE}
+else
+echo "$(date +%F.%T) backup was not successfully saved" >> ${LOG_DIR}/${LOG_FILE}
+fi
+```
