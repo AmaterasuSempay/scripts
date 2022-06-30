@@ -42,7 +42,7 @@ SECRET_ID=your_secretid                                                     # -u
 
 ```
 GPG_SECRET_VERSION=latest                                                   # -secret version (If there are many versions, use the right one)
-GPG_SECRET_ID=gpg-secret                                                    # -use secret name
+GPG_SECRET_ID=your_gpg_secretid                                             # -use secret name
 GPG_SECRET_KEY=/path/to/public.key                                          # -file for create gpg key
 ```
 7.Time lap for function delete, copy, hashsum.
