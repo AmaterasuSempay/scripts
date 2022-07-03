@@ -47,6 +47,7 @@ HASH_SECOND= find ${SAVE_BASE} -type f -cmin ${TIME_LAP_HASH_SB} -name "${ODOO_D
 # compare and log
 if [ "$HASH_FIRST" = "$HASH_SECOND" ]; then
 echo "$(date +%F.%T) backup was successfully saved" >> ${LOG_DIR}/${LOG_FILE}
+find ${BACKUP_DIR} -type f -cmin ${TIME_LAP_HASH_BD} -name "${ODOO_DATABASE}.*.*.gpg" -delete
 else
 echo "$(date +%F.%T) backup was not successfully saved" >> ${LOG_DIR}/${LOG_FILE}
 fi
